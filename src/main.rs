@@ -116,13 +116,26 @@ async fn update(data: Data<AppState>,
     let conn = &data.conn;
     let form = post_form.into_inner();
     post::ActiveModel {
-        id:Set(id.into_inner()),
+        id: Set(id.into_inner()),
         title: Set(form.title.to_owned()),
         text: Set(form.text.to_owned()),
     }
         .save(conn)
         .await
         .expect("could not edit post");
+    Ok(HttpResponse::Found().append_header(("location", "/")).finish())
+}
+
+#[post("/delete/{id}")]
+async fn delete(data: web::Data<AppState>, id: web::Path<i32>) -> Result<HttpResponse, Error> {
+    let conn = &data.conn;
+    let post: post::ActiveModel = Post::find_by_id(id.into_inner())
+        .one(conn)
+        .await
+        .unwrap()
+        .unwrap()
+        .into();
+    post.delete(conn).await.unwrap();
     Ok(HttpResponse::Found().append_header(("location", "/")).finish())
 }
 
@@ -170,4 +183,5 @@ pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(create);
     cfg.service(edit);
     cfg.service(update);
+    cfg.service(delete);
 }
