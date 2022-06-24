@@ -108,6 +108,23 @@ async fn edit(data: Data<AppState>, id: web::Path<i32>) -> Result<HttpResponse, 
     Ok(HttpResponse::Ok().content_type("text/html").body(body))
 }
 
+#[post("/{id}")]
+async fn update(data: Data<AppState>,
+                id: web::Path<i32>,
+                post_form: web::Form<post::Model>,
+) -> Result<HttpResponse, Error> {
+    let conn = &data.conn;
+    let form = post_form.into_inner();
+    post::ActiveModel {
+        id:Set(id.into_inner()),
+        title: Set(form.title.to_owned()),
+        text: Set(form.text.to_owned()),
+    }
+        .save(conn)
+        .await
+        .expect("could not edit post");
+    Ok(HttpResponse::Found().append_header(("location", "/")).finish())
+}
 
 fn get_env_var(str: &str) -> String {
     let string = format!("{} is not set in .env file", str);
@@ -152,4 +169,5 @@ pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(new);
     cfg.service(create);
     cfg.service(edit);
+    cfg.service(update);
 }
