@@ -46,8 +46,22 @@ async fn list(req: HttpRequest, data: web::Data<AppState>) -> Result<HttpRespons
     let paginator = Post::find()
         .order_by_asc(post::Column::Id)
         .paginate(conn, posts_per_page);
+    let num_pages = paginator.num_pages().await.ok().unwrap();
 
-    Ok(HttpResponse::Ok().body("ok"))
+    let posts = paginator
+        .fetch_page(page - 1)
+        .await
+        .expect("could not retrieve posts");
+    let mut ctx = tera::Context::new();
+    ctx.insert("posts", &posts);
+    ctx.insert("page", &page);
+    ctx.insert("posts_per_page", &posts_per_page);
+    ctx.insert("num_pages", &num_pages);
+
+    let body = template
+        .render("index.html.tera", &ctx)
+        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(body))
 }
 
 fn get_env_var(str: &str) -> String {
