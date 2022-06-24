@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::sync::Mutex;
 use actix_files::FilesService;
+use actix_web::cookie::time::macros::date;
+use actix_web::web::Data;
 use tera::Tera;
 
 const DEFAULT_POSTS_PER_PAGE: usize = 5;
@@ -64,6 +66,15 @@ async fn list(req: HttpRequest, data: web::Data<AppState>) -> Result<HttpRespons
     Ok(HttpResponse::Ok().content_type("text/html").body(body))
 }
 
+#[get("/new")]
+async fn new(data: web::Data<AppState>) -> Result<HttpResponse, Error> {
+    let template = &data.templates;
+    let ctx = tera::Context::new();
+    let body = template.render("new.html.tera", &ctx)
+        .map_err(|_| error::ErrorInternalServerError("templdate error"))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(body))
+}
+
 fn get_env_var(str: &str) -> String {
     let string = format!("{} is not set in .env file", str);
     env::var(str).expect(&*string)
@@ -104,4 +115,5 @@ async fn main() -> std::io::Result<()> {
 
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(list);
+    cfg.service(new);
 }
