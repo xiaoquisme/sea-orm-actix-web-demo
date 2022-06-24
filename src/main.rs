@@ -14,7 +14,7 @@ use std::env;
 use std::sync::Mutex;
 use actix_files::FilesService;
 use actix_web::cookie::time::macros::date;
-use actix_web::web::Data;
+use actix_web::web::{Data, Form};
 use tera::Tera;
 
 const DEFAULT_POSTS_PER_PAGE: usize = 5;
@@ -75,6 +75,22 @@ async fn new(data: web::Data<AppState>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().content_type("text/html").body(body))
 }
 
+#[post("/")]
+async fn create(data: Data<AppState>, post_form: Form<post::Model>) -> Result<HttpResponse, Error> {
+    let conn = &data.conn;
+    let form = post_form.into_inner();
+    post::ActiveModel {
+        title: Set(form.title.to_owned()),
+        text: Set(form.text.to_owned()),
+        ..Default::default()
+    }
+        .save(conn)
+        .await
+        .expect("could not insert post");
+    Ok(HttpResponse::Found().append_header(("location", "/")).finish())
+}
+
+
 fn get_env_var(str: &str) -> String {
     let string = format!("{} is not set in .env file", str);
     env::var(str).expect(&*string)
@@ -116,4 +132,5 @@ async fn main() -> std::io::Result<()> {
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(list);
     cfg.service(new);
+    cfg.service(create);
 }
