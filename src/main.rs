@@ -7,7 +7,7 @@ use entity::post;
 use entity::post::Entity as Post;
 use listenfd::ListenFd;
 use migration::{Migrator, MigratorTrait};
-use sea_orm::{DatabaseConnection, TransactionStream};
+use sea_orm::{DatabaseConnection, Iden, TransactionStream};
 use sea_orm::{entity::*, query::*};
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -21,7 +21,7 @@ const DEFAULT_POSTS_PER_PAGE: usize = 5;
 
 #[derive(Debug, Clone)]
 struct AppState {
-    templates: tera::Tera,
+    templates: Tera,
     conn: DatabaseConnection,
 }
 
@@ -90,6 +90,24 @@ async fn create(data: Data<AppState>, post_form: Form<post::Model>) -> Result<Ht
     Ok(HttpResponse::Found().append_header(("location", "/")).finish())
 }
 
+#[get("/{id}")]
+async fn edit(data: Data<AppState>, id: web::Path<i32>) -> Result<HttpResponse, Error> {
+    let conn = &data.conn;
+    let template = &data.templates;
+    let post: post::Model = Post::find_by_id(id.into_inner())
+        .one(conn)
+        .await
+        .expect("cound not found post")
+        .unwrap();
+    let mut ctx = tera::Context::new();
+    ctx.insert("post", &post);
+
+    let body = template
+        .render("edit.html.tera", &ctx)
+        .map_err(|_| error::ErrorInternalServerError("Template error")).unwrap();
+    Ok(HttpResponse::Ok().content_type("text/html").body(body))
+}
+
 
 fn get_env_var(str: &str) -> String {
     let string = format!("{} is not set in .env file", str);
@@ -133,4 +151,5 @@ pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(list);
     cfg.service(new);
     cfg.service(create);
+    cfg.service(edit);
 }
