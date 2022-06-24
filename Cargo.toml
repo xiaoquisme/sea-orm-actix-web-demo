@@ -1,0 +1,29 @@
+[package]
+name = "sea-orm-demo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = [".", "entity", "migration"]
+
+[dependencies]
+sea-orm = { version = "0.8.0", features = ["sqlx-mysql", "runtime-actix-native-tls", "debug-print"] }
+actix-files = "0.6"
+actix-http = "3"
+actix-rt = "2.7"
+actix-service = "2"
+actix-web = "4"
+
+tera = "1.15.0"
+dotenv = "0.15"
+listenfd = "0.5"
+serde = "1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+entity = { path = "entity" }
+migration = { path = "migration" }
+
+#[dependencies.sqlx-rt]
+#version = "0.5.13"
+#features=["runtime-actix-native-tls"]
