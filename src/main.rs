@@ -16,7 +16,7 @@ use actix_files::FilesService;
 use actix_http::Uri;
 use actix_web::cookie::time::format_description::modifier::WeekNumberRepr;
 use actix_web::cookie::time::macros::date;
-use actix_web::web::{Data, Form, Path};
+use actix_web::web::{Data, Form, Json, Path};
 use tera::Tera;
 
 const DEFAULT_POSTS_PER_PAGE: usize = 5;
